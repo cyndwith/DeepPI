@@ -14,9 +14,11 @@ import cv2
 # 5. TLD : cv2.TrackerTLD_create
 # 6. Medianflow : cv2.TrackerMedianFlow_create
 # 7. MOSSE : cv2.TrackerMOSSE_create
-
+# 8. GOTURN: Deeplearning based tracking
+# Note: Caffe model downloaded and saved in same folder
+# Model link: https://github.com/spmallick/goturn-files
 tracker = cv2.TrackerMOSSE_create()
-
+# tracker = cv2.TrackerGOTURN_create()
 initBBox = None
 
 camera = cv2.VideoCapture(0)
@@ -85,6 +87,7 @@ while True:
     # check to see if we are currently tracking an object
     if initBB is not None:
         # grab the new bounding box coordinates of the object
+        # return's 0 on failure
         (success, box) = tracker.update(frame)
 
         # check to see if the tracking was a success
