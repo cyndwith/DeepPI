@@ -1,10 +1,13 @@
 # import the necessary packages
 # from imutils.video import VideoStream
 # from imutils.video import FPS
+
 import argparse
 import imutils
 import time
 import cv2
+
+from object_detection import *
 
 # Different types for trackers
 # 1. CSRT : cv2.TrackerCSRT_create
@@ -25,6 +28,9 @@ initBBox = None
 video = cv2.VideoCapture("dashcam_boston.mp4")
 time.sleep(0.25)
 
+# object detection 
+obj = ObjectDetection()
+
 # loop over the frames of the video
 while True:
     # grab the current frame and initialize the occupied/unoccupied
@@ -38,14 +44,31 @@ while True:
     if frame is None:
         break
 
+    # resize the frame
+    frame = cv2.resize(frame, (300, 300))
+    
     print("frame shape:", frame.shape[:2])
     W, H = frame.shape[:2]
     text = "No Detection"
 
-    # resize the frame
-    frame = cv2.resize(frame, (300, 300))
+    obj.model.setInput(cv2.dnn.blobFromImage(frame, size=(300, 300), swapRB=True))
+    output = obj.model.forward()
 
-
+    # loop through detections
+    for detection in output[0, 0, :, :]:
+        confidence = detection[2]
+        if confidence > .7:
+            class_id = detection[1]
+            class_name = obj.id_class_name(class_id, obj.classNames)
+            print(str(str(class_id) + " " + str(detection[2]) + " " + class_name))
+            if "car" in class_name:
+                box_x = detection[3] * W
+                box_y = detection[4] * H
+                box_w = detection[5] * W
+                box_h = detection[6] * H
+                initBBox = (int(box_x), int(box_y), int(box_w), int(box_h))
+                print("car detected at: ", initBBox)
+                cv2.rectangle(frame, (int(box_x), int(box_y)), (int(box_x)+int(box_w),int(box_y)+int(box_h)), (255, 0, 0), 2)
     # check to see if we are currently tracking an object
     if initBBox is not None:
         # grab the new bounding box coordinates of the object
@@ -67,7 +90,7 @@ while True:
         info = [
             ("Tracker", "MOSSE"),
             ("Success", "Yes" if success else "No"),
-            ("FPS", "{:.2f}".format(x)),
+            ("FPS", "{:.2f}".format(0)),
         ]
 
         # loop over the info tuples and draw them on our frame
