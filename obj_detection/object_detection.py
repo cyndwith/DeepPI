@@ -25,9 +25,8 @@ class ObjectDetection:
                            86: 'vase', 87: 'scissors', 88: 'teddy bear', 89: 'hair drier', 90: 'toothbrush'}
         # load the model
         self.model = cv2.dnn.readNetFromTensorflow('models/frozen_inference_graph.pb',
-                                                   'models/ssd_mobilenet_v2_coo_2018_03_29.pbtxt')
-
-    def id_class_name(self, class_id, classes):
+                                                   'models/ssd_mobilenet_v2_coco_2018_03_29.pbtxt')
+    def id_class_name(self, class_id, classes):  
         for key, value in classes.items():
             if class_id == key:
                 return value
