@@ -31,15 +31,15 @@ class ObjectDetection:
             if class_id == key:
                 return value
 
-    def object_detection(self, frame):
+    def object_detection(self, frame, frameCenter):
         self.model.setInput(cv2.dnn.blobFromImage(frame, size=(150, 150), swapRB=True))
-        output = model.forward()
-
+        output = self.model.forward()
+        frame_width, frame_height = 150, 150
         for detection in output[0, 0, :, :]:
             confidence = detection[2]
             if confidence > .5:
                 class_id = detection[1]
-                class_name = id_class_name(class_id, classNames)
+                class_name = self.id_class_name(class_id, self.classNames)
                 print(str(str(class_id) + " " + str(detection[2]) + " " + class_name))
                 if 'person' in class_name:
                     box_x = detection[3] * frame_width
@@ -56,6 +56,7 @@ class ObjectDetection:
 
                     objCenter = (objX, objY)
                     objBBox = (box_x, box_y, box_width, box_height)
-
+                    print("objCenter:", objCenter)
                     return (objCenter, objBBox)
-
+        print("frameCenter:", frameCenter)
+        return (frameCenter, None)
