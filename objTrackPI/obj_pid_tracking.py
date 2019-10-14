@@ -11,12 +11,14 @@ import sys
 import cv2
 
 # servo range for the steering control
-servoRange = (-30, 30)
-
+servoRange = (-20, 20)
+X = 0
+Y = 0
 # function to handle keyboard interrupt
 def signal_handler(sig, frame):
     # print a status message
     print("[INFO] You pressed `ctrl + c`! Exiting...")
+    pca.deinit()
     GPIO.cleanup()
     # exit
     sys.exit()
@@ -36,7 +38,7 @@ def obj_detection(objX, objY, centerX, centerY):
 	# vertically (since our camera was upside down)
         grabbed, frame = camera.read()
         # frame = cv2.flip(frame, 0)
-        frame = cv2.resize(frame, (150, 150))
+        frame = cv2.resize(frame, (300, 300))
         if not grabbed:
             break
 
@@ -45,44 +47,51 @@ def obj_detection(objX, objY, centerX, centerY):
         (H, W) = frame.shape[:2]
         centerX.value = W // 2
         centerY.value = H // 2
-
 	# find the object's location
         objectLoc = obj.object_detection(frame, (centerX.value, centerY.value))
         ((objX.value, objY.value), rect) = objectLoc
-	# extract the bounding box and draw it
+        print("obj (X, Y):", objX.value, objY.value)
+        # extract the bounding box and draw it
         if rect is not None:
             (x, y, w, h) = rect
             cv2.rectangle(frame, (int(x), int(y)), (int(w), int(h)), (0, 255, 0), 2)
-
-	# display the frame to the screen
+        # display the frame to the screen
         cv2.imshow("Person Tracking", frame)
         cv2.waitKey(1)
 
 def pid_process(output, p, i, d, objCoord, centerCoord):
     # signal trap to handle keyboard interrupt
     signal.signal(signal.SIGINT, signal_handler)
-
     # create a PID and initialize it
     p = PID(p.value, i.value, d.value)
+    # p = PID()
     p.initialize()
 
     # loop indefinitely
     while True:
         # calculate the error
         error = centerCoord.value - objCoord.value
-	# update the value
-        output.value = p.update(error)
-
-def set_servos(angle, servosCtrl):
+        # update the value
+        output.value = p.update(error) + 45
+    
+         
+def set_servos(pan, tilt):
     # signal trap to handle keyboard interrupt
     signal.signal(signal.SIGINT, signal_handler)
+
+    panServosCtrl  = ServosControl()
+    panServosCtrl.setup(0)
+    tiltServosCtrl = ServosControl()
+    tiltServosCtrl.setup(1)
     # loop indefinitely
     while True:
-        # steer angles are reversed ? steerAngle = -1 * angle.value
-        steerAngle = angle.value // 2
-        print("steerAngle:", steerAngle)
-        servosCtrl.steer_to_angle(steerAngle)
-
+        print("pan, tilt:", pan.value, tilt.value)
+        panServosCtrl.set_servo_angle(pan.value)
+        #panServosCtrl.steer_to_angle(pan.value)
+        time.sleep(0.2)
+        tiltServosCtrl.set_servo_angle(tilt.value)
+        #tiltServosCtrl.steer_to_angle(tilt.value)
+        time.sleep(0.2) 
 
 if __name__ == "__main__":
     print("main called\n")
@@ -97,28 +106,40 @@ if __name__ == "__main__":
         objX = manager.Value("i", 0)
         objY = manager.Value("i", 0)
 	# pan and tilt values will be managed by independed PIDs
-        servosCtrl = ServosControl()
-        steerAngle = manager.Value("i", 0)
+        panAngle = manager.Value("i", 0)
+        tiltAngle = manager.Value("i", 0)
 	# set PID values for panning
-        angleP = manager.Value("f", 0.09)
-        angleI = manager.Value("f", 0.08)
-        angleD = manager.Value("f", 0.002)
-	# we have 4 independent processes
+        panP = manager.Value("f", 0.2)
+        panI = manager.Value("f", 0.0)
+        panD = manager.Value("f", 0.0)
+        tiltP = manager.Value("f", 0.2)
+        tiltI = manager.Value("f", 0.0)
+        tiltD = manager.Value("f", 0.0)
+        '''
+        panP = manager.Value("f", 0.09)
+        panI = manager.Value("f", 0.08)
+        panD = manager.Value("f", 0.002)
+        tiltP = manager.Value("f", 0.09)
+        tiltI = manager.Value("f", 0.08)
+        tiltD = manager.Value("f", 0.002)
+	'''
+        # we have 4 independent processes
 	# 1. objectCenter    - finds/localizes the object
 	# 2. steer Angle     - PID control loop determines steer angle
 	# 3. Servos Control  - drives the servos to proper angles based
 	#                      on PID feedback to keep object in center
         processObjectDetection = Process(target=obj_detection, args=(objX, objY, centerX, centerY))
-        processSteerAngle      = Process(target=pid_process, args=(steerAngle, angleP, angleI, angleD, objX, centerX))
-        processServosControl   = Process(target=set_servos, args=(steerAngle, servosCtrl))
+        processPanAngle        = Process(target=pid_process, args=(panAngle, panP, panI, panD, objY, centerY))
+        processTiltAngle       = Process(target=pid_process, args=(tiltAngle, tiltP, tiltI, tiltD, objX, centerX))
+        processServosControl   = Process(target=set_servos, args=(panAngle, tiltAngle))
         # start all 3 processes
         processObjectDetection.start()
-        processSteerAngle.start()
+        processPanAngle.start()
+        processTiltAngle.start()
         processServosControl.start()
 	# join all 4 processes
         processObjectDetection.join()
-        processSteerAngle.join()
+        processPanAngle.join()
+        processTiltAngle.join()
         processServosControl.join()
-	# disable the servos
-        servosCtrl.disable()
 

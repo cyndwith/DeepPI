@@ -26,15 +26,49 @@ class ObjectDetection:
         # load the model
         self.model = cv2.dnn.readNetFromTensorflow('models/frozen_inference_graph.pb',
                                                    'models/ssd_mobilenet_v2_coco_2018_03_29.pbtxt')
+        # object BBox
+        self.objBBox = None
     def id_class_name(self, class_id, classes):  
         for key, value in classes.items():
             if class_id == key:
                 return value
 
     def object_detection(self, frame, frameCenter):
-        self.model.setInput(cv2.dnn.blobFromImage(frame, size=(150, 150), swapRB=True))
+        self.model.setInput(cv2.dnn.blobFromImage(frame, size=(300, 300), swapRB=True))
         output = self.model.forward()
-        frame_width, frame_height = 150, 150
+        frame_width, frame_height = 300, 300
+        # tracking
+        tracker = cv2.TrackerMOSSE_create()
+        if self.objBBox is not None:
+            # new bounding box, returns 0 if it fails
+            (success, box) = tracker.update(frame)
+            print(box)
+            print("Tracking Status:", success)
+            if success:
+                (x, y, w, h) = [int(v) for v in box]
+                cv2.rectangle(frame, (x, y), (x + w, y + w), (0, 255, 0), 2)
+
+            info = [("Tracker", "MOSSE"),
+                    ("Success", "Yes" if success else "No"),
+                    ]
+            H = 150
+            W = 150
+            # loop over the info tuples and draw them on frame
+            for (i, (k, v)) in enumerate(info):
+                text = "{}: {}".format(k, v)
+                cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+            
+            if success:
+                objX = x + (w // 2)
+                objY = y + (h // 2)
+
+                objCenter = (objX, objY)
+                objBBox = (box_x, box_y, box_width, box_height)
+                self.objBBox = objBBox
+                return (objCenter, objBBox)
+        
+        # If no object tracking try detection
         for detection in output[0, 0, :, :]:
             confidence = detection[2]
             if confidence > .5:
@@ -56,7 +90,11 @@ class ObjectDetection:
 
                     objCenter = (objX, objY)
                     objBBox = (box_x, box_y, box_width, box_height)
+                    self.objBBox = objBBox
+                    # Initialize the tracker
+                    tracker.init(frame, objBBox)
+
                     print("objCenter:", objCenter)
                     return (objCenter, objBBox)
-        print("frameCenter:", frameCenter)
+ 
         return (frameCenter, None)
