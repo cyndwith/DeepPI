@@ -28,7 +28,6 @@ def id_class_name(class_id, classes):
     for key, value in classes.items():
         if class_id == key:
             return value
-
 # Loading model
 model = cv2.dnn.readNetFromTensorflow('models/frozen_inference_graph.pb',
                                       'models/ssd_mobilenet_v2_coco_2018_03_29.pbtxt')
@@ -47,6 +46,7 @@ while True:
 	# grab the current frame and initialize the occupied/unoccupied
 	# text
         (grabbed, frame) = camera.read()
+        frame = cv2.resize(frame, (300, 300))
         print("frame shape:", frame.shape[:2])
         frame_width, frame_height = frame.shape[:2]
         text = "Unoccupied"
@@ -57,8 +57,10 @@ while True:
             break
 	
         # resize frame to (300, 300)
-        model.setInput(cv2.dnn.blobFromImage(frame, size=(150, 150), swapRB=True))
-        
+        model.setInput(cv2.dnn.blobFromImage(frame, size=(300, 300), swapRB=True))
+        frame_width = 300
+        frame_height = 300
+
         output = model.forward()
         # print(output[0,0,:,:].shape)
         

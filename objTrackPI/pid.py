@@ -23,30 +23,29 @@ class PID:
 
 	def update(self, error, sleep=0.2):
 		# pause for a bit
-		time.sleep(sleep)
+                time.sleep(sleep)
 
 		# grab the current time and calculate delta time
-		self.currTime = time.time()
-		deltaTime = self.currTime - self.prevTime
-
-		# delta error
-		deltaError = error - self.prevError
+                self.currTime = time.time()
+                deltaTime = self.currTime - self.prevTime
+		
+                # delta error
+                deltaError = error - self.prevError
 
 		# proportional term
-		self.cP = error
+                self.cP = error
 
 		# integral term
-		self.cI += error * deltaTime
+                self.cI += error * deltaTime
 
 		# derivative term and prevent divide by zero
-		self.cD = (deltaError / deltaTime) if deltaTime > 0 else 0
-
+                self.cD = (deltaError / deltaTime) if deltaTime > 0 else 0
 		# save previous time and error for the next update
-		self.prevTime = self.currTime
-		self.prevError = error
+                self.prevTime = self.currTime
+                self.prevError = error
 
 		# sum the terms and return
-		return sum([
+                return sum([
 			self.kP * self.cP,
 			self.kI * self.cI,
 			self.kD * self.cD])

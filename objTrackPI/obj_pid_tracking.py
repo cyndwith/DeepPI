@@ -11,7 +11,7 @@ import sys
 import cv2
 
 # servo range for the steering control
-servoRange = (-20, 20)
+servoRange = ( 0, 90)
 X = 0
 Y = 0
 # function to handle keyboard interrupt
@@ -26,9 +26,10 @@ def signal_handler(sig, frame):
 def obj_detection(objX, objY, centerX, centerY):
     # signal trap to handle keyboard interrupt
     signal.signal(signal.SIGINT, signal_handler)
-
+    
+    # camera = VideoStream(usePiCamera=True).start()
     camera = cv2.VideoCapture(0)
-    time.sleep(0.25)
+    time.sleep(2.0)
 
     # Loading model
     obj = ObjectDetection()
@@ -72,8 +73,8 @@ def pid_process(output, p, i, d, objCoord, centerCoord):
         # calculate the error
         error = centerCoord.value - objCoord.value
         # update the value
-        output.value = p.update(error) + 45
-    
+        output.value = 45 - p.update(error)
+        output.value = min(max(0, output.value), 90) 
          
 def set_servos(pan, tilt):
     # signal trap to handle keyboard interrupt
@@ -109,12 +110,12 @@ if __name__ == "__main__":
         panAngle = manager.Value("i", 0)
         tiltAngle = manager.Value("i", 0)
 	# set PID values for panning
-        panP = manager.Value("f", 0.2)
-        panI = manager.Value("f", 0.0)
-        panD = manager.Value("f", 0.0)
-        tiltP = manager.Value("f", 0.2)
-        tiltI = manager.Value("f", 0.0)
-        tiltD = manager.Value("f", 0.0)
+        panP = manager.Value("f", 0.1)
+        panI = manager.Value("f", 0.002)
+        panD = manager.Value("f", 0.008)
+        tiltP = manager.Value("f", 0.1)
+        tiltI = manager.Value("f", 0.002)
+        tiltD = manager.Value("f", 0.008)
         '''
         panP = manager.Value("f", 0.09)
         panI = manager.Value("f", 0.08)
