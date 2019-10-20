@@ -9,8 +9,11 @@ time.sleep(2.0)
 
 gcs_client = GCSClient()
 
-i = 0
-while (i < 10):
+num_images = 1000
+
+i = 1
+
+while (i < num_images):
     
     grabbed, frame = camera.read()
 
@@ -21,15 +24,15 @@ while (i < 10):
     
     filePath = os.getcwd()
     fileName = f'image_{i}.jpg'
-    localFile = filePath + '/../' + gcs_client.local_folder + fileName
+    localFile = filePath + gcs_client.local_folder + fileName
     print(fileName)
     cv2.imwrite(localFile, frame)
     
-    gcsFile = gcs_client.local_folder + fileName
+    gcsFile = localFile # gcs_client.local_folder + fileName
     gcs_client.upload_file(gcsFile)
 
     key = cv2.waitKey(1) & 0xFF
-    i = i + 1
+    i = i + 2
     if key == ord("q"):
         break
    

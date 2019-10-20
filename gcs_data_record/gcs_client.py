@@ -26,7 +26,7 @@ class GCSClient:
         self.storage_client = storage.Client()
         self.bucket = self.storage_client.get_bucket('garage_door')
         self.bucket_folder = "DeepPI/garage_door/"
-        self.local_folder = "../DeepPI_data/garage_door/"
+        self.local_folder = "/../DeepPI_data/garage_door/"
 
     def upload_files(self, localFolder):
         """Upload files to GCP bucket."""
@@ -42,7 +42,6 @@ class GCSClient:
         """Uploading file to GCP bucket"""
         print("uploading file...", localFile)
         fileName = os.path.basename(localFile)
-        print("fileName:", fileName)
         blob = self.bucket.blob(self.bucket_folder + fileName)
         blob.upload_from_filename(localFile)
         return f'Uploaded {localFile} to "{self.bucket}" bucket.'

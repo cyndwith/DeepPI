@@ -3,9 +3,9 @@ from movement_control import *
 import time
 
 recog = sr.Recognizer()
+mic   = sr.Microphone()
+car   = CarControl()
 
-mic = sr.Microphone()
-car=CarControl()
 while 1:
     with mic as source:
         recog.adjust_for_ambient_noise(source)
