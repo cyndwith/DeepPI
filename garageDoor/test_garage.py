@@ -17,7 +17,6 @@ obj = GarageDoor()
 # loop over the frames of the video
 while True:
     # grab the current frame and initialize the occupied/unoccupied 
-    print("read camera\n")
     (grabbed, frame) = camera.read()
     
     # if the frame could not be grabbed, then we have reached the end of the video
@@ -28,18 +27,9 @@ while True:
     # resize the frame
     frame = cv2.resize(frame, (64,64))
 
-    print("frame shape:", frame.shape[:2])
-    W, H = frame.shape[:2]
-    text = "No Detection"
-
     garage_status = obj.garage_door(frame)
-    print("detection:", garage_status)
-    '''
-    if detection is not None:
-        print("detection error\n")
-        break
-    '''
     print("garage status:", garage_status)
+    
     # show the frame and record if the user presses a key
     cv2.imshow("Camera Feed", frame)
     cv2.imwrite("output.jpg", frame)
